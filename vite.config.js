@@ -1,12 +1,15 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
+/**
+ * Vite configuration
+ * Configures React plugin and development server settings
+ */
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0', // This makes the server accessible from all network interfaces
-    port: 3000,       // You can specify a port (default is 5173)
-    open: true,       // Automatically open the app in the browser
+    host: '0.0.0.0', // Makes server accessible from all network interfaces
+    port: 3000,       // Specifies a custom port
+    open: true,       // Automatically opens browser when server starts
   },
-})
+});
