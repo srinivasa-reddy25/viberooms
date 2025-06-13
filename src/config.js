@@ -1,7 +1,11 @@
 import { initializeApp } from "firebase/app";
-import {getAuth, GoogleAuthProvider ,signInWithPopup,signInWithEmailAndPassword} from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from 'firebase/firestore';
 
-
+/**
+ * Firebase configuration object
+ * Contains API keys and project settings
+ */
 const firebaseConfig = {
   apiKey: "AIzaSyBKZQvRMP0s279SpU-3AMAlJxtAkbGsSsQ",
   authDomain: "vibelogin-4b1a5.firebaseapp.com",
@@ -12,47 +16,17 @@ const firebaseConfig = {
   measurementId: "G-4B7FG0NXHC"
 };
 
-// Initialize Firebase
+// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
+// Initialize Firebase authentication
 const auth = getAuth(app);
 
-const googleprovider = new GoogleAuthProvider();
+// Initialize Google auth provider
+const googleProvider = new GoogleAuthProvider();
 
-// Function to handle Google login
+// Initialize Firestore database
+const db = getFirestore(app);
 
-const handleGoogleLogin = async(setError) => {
-    try{
-        const result= await signInWithPopup(auth, googleprovider);
-        console.log("User signed in with Google:", result.user);
-        setError(null); // Clear any previous errors
-    }
-    catch(error) {
-        console.log(error.message);
-        setError("Failed to sign in with Google. Please try again.");
-    }
-  
-};
-
-
-// handle login with email and password
-
-const handlemailLogin = async(e, setError) => {
-    e.preventDefault();
-    const email = e.target.email.value;
-    const password = e.target.password.value;
-    try{
-        const usercred= await signInWithEmailAndPassword(auth, email, password);
-        console.log("User signed in with email and password:", usercred.user);
-        setError(null); // Clear any previous errors
-    }
-    catch(error) {
-        console.log(error.message);
-        setError("Failed to sign in with email and password. Please try again.");
-    }
-    e.target.reset(); // Reset the form fields after submission
-};
-
-
-
-export {auth, googleprovider, handleGoogleLogin,handlemailLogin};
+// Export Firebase services
+export { auth, googleProvider, db };

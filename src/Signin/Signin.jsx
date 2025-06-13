@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+// filepath: /Users/srinivasareddymedam/Desktop/viberooms/src/Signin/Signin.jsx
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './index.css'; // Assuming you have a global CSS file for styles
+import { signInWithEmailAndPassword, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { auth, googleProvider } from '../config.js'; // Import with alias
+import './index.css';
 
+/**
+ * Signin component - Handles user authentication
+ */
 const Signin = () => {
+  console.log('Signin component loaded');
+  // Form state management
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -11,6 +19,23 @@ const Signin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, redirect to home page
+        console.log('User already signed in, redirecting to home');
+        navigate('/home');
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [navigate]);
+
+  /**
+   * Handle input field changes
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -20,14 +45,20 @@ const Signin = () => {
     }
   };
 
+  /**
+   * Validate form input fields
+   * @returns {boolean} - True if form is valid
+   */
   const validateForm = () => {
     const newErrors = {};
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
     
+    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
@@ -36,6 +67,9 @@ const Signin = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handle form submission for email/password login
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -43,19 +77,50 @@ const Signin = () => {
     
     setIsLoading(true);
     
-    // Simple submission without actual authentication
     try {
-      console.log('Submitting:', formData);
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(
+        auth, 
+        formData.email, 
+        formData.password
+      );
       
-      // Simulate API call with timeout
-      setTimeout(() => {
-        // Navigate to home page after form submission
-        navigate('/home');
-        setIsLoading(false);
-      }, 1000);
+      console.log('User signed in successfully');
       
+      // Navigate to home page after successful login
+      navigate('/home');
     } catch (error) {
-      setErrors({ form: 'An error occurred. Please try again.' });
+      console.error('Login error:', error);
+      
+      // Handle specific Firebase auth errors
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        setErrors({ form: 'Invalid email or password' });
+      } else if (error.code === 'auth/too-many-requests') {
+        setErrors({ form: 'Too many failed login attempts. Please try again later.' });
+      } else {
+        setErrors({ form: 'An error occurred. Please try again.' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handle Google sign-in
+   */
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Sign in with Google
+      await signInWithPopup(auth, googleProvider);
+      
+      // Navigate to home page after successful login
+      navigate('/home');
+    } catch (error) {
+      console.error('Google login error:', error);
+      setErrors({ form: 'Google login failed. Please try again.' });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -113,6 +178,19 @@ const Signin = () => {
             disabled={isLoading}
           >
             {isLoading ? 'Signing In...' : 'Sign In'}
+          </button>
+          
+          <div className="auth-divider">
+            <span>OR</span>
+          </div>
+          
+          <button 
+            type="button"
+            onClick={handleGoogleLogin}
+            className="google-auth-button"
+          >
+            <img src="https://cdn.cdnlogo.com/logos/g/35/google-icon.svg" alt="Google" className="google-icon" />
+            Continue with Google
           </button>
         </form>
         

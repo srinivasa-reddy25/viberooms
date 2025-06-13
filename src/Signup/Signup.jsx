@@ -1,20 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './index.css'; // Assuming you have a global CSS file for styles
+import { createUserWithEmailAndPassword, signInWithPopup, updateProfile, onAuthStateChanged } from 'firebase/auth';
+import { auth, googleProvider } from '../config';
+import './index.css';
 
-import { handleGoogleLogin } from '../config'; // Import your Google login handler
-
+/**
+ * Signup component - Handles new user registration
+ */
 const Signup = () => {
+  // Form state management
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
-  const [errors, setErrors] = useState({}); // Initialize as empty object, not null
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate(); // Add this for navigation after successful login
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigate = useNavigate();
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, redirect to home page
+        console.log('User already signed in, redirecting to home');
+        navigate('/home');
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [navigate]);
+
+  /**
+   * Handle input field changes
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -24,25 +47,47 @@ const Signup = () => {
     }
   };
 
+  /**
+   * Toggle password visibility
+   */
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  /**
+   * Toggle confirm password visibility
+   */
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  /**
+   * Validate form input fields
+   * @returns {boolean} - True if form is valid
+   */
   const validateForm = () => {
     const newErrors = {};
     
+    // Name validation
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+      newErrors.fullName = 'Nick name is required';
     }
     
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
     
+    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters long';
     }
     
+    // Confirm password validation
     if (formData.confirmPassword !== formData.password) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
@@ -51,6 +96,9 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handle form submission for email/password registration
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -58,30 +106,55 @@ const Signup = () => {
     
     setIsLoading(true);
     try {
-      // Replace with your actual registration logic
-      console.log('Submitting:', formData);
+      // Create user with Firebase
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        formData.email, 
+        formData.password
+      );
       
-      // Simulate successful registration
-      setTimeout(() => {
-        // Navigate to home page after successful registration
-        navigate('/home');
-        setIsLoading(false);
-      }, 1000);
+      // Update the user's profile to include the display name
+      await updateProfile(userCredential.user, {
+        displayName: formData.fullName
+      });
       
+      console.log('User registered successfully');
+      
+      // Navigate to home page after successful registration
+      navigate('/home');
     } catch (error) {
-      setErrors({ form: 'Registration failed. Please try again.' });
+      console.error('Signup error:', error);
+      
+      // Handle specific Firebase auth errors
+      if (error.code === 'auth/email-already-in-use') {
+        setErrors({ form: 'Email is already in use. Please use a different email or sign in.' });
+      } else if (error.code === 'auth/weak-password') {
+        setErrors({ password: 'Password is too weak. Please use a stronger password.' });
+      } else {
+        setErrors({ form: 'Registration failed. Please try again.' });
+      }
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLoginBtn = () => {
+  /**
+   * Handle Google sign-in/registration
+   */
+  const handleGoogleSignup = async () => {
     try {
-      // Implement Google login functionality here
-      handleGoogleLogin(setErrors);
-      console.log('Google login clicked');
+      setIsLoading(true);
+      
+      // Sign in with Google
+      await signInWithPopup(auth, googleProvider);
+      
+      // Navigate to home page after successful login
+      navigate('/home');
     } catch (error) {
-      console.error('Google login error:', error);
-      setErrors({ form: 'Google login failed. Please try again.' });
+      console.error('Google signup error:', error);
+      setErrors({ form: 'Google signup failed. Please try again.' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -93,7 +166,6 @@ const Signup = () => {
           <p>Join VibeRooms today</p>
         </div>
         
-        {/* Add null check before accessing errors.form */}
         {errors && errors.form && <div className="auth-error">{errors.form}</div>}
         
         <form onSubmit={handleSubmit} className="auth-form">
@@ -105,12 +177,12 @@ const Signup = () => {
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              placeholder="Enter the name used in the application"
-              className={errors && errors.fullName ? 'error' : ''}
+              placeholder="Enter your nick name"
+              className={errors.fullName ? 'error' : ''}
             />
-            {errors && errors.fullName && <small className="error-text">{errors.fullName}</small>}
+            {errors.fullName && <small className="error-text">{errors.fullName}</small>}
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -120,44 +192,62 @@ const Signup = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter your email"
-              className={errors && errors.email ? 'error' : ''}
+              className={errors.email ? 'error' : ''}
             />
-            {errors && errors.email && <small className="error-text">{errors.email}</small>}
+            {errors.email && <small className="error-text">{errors.email}</small>}
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Create a password"
-              className={errors && errors.password ? 'error' : ''}
-            />
-            {errors && errors.password && <small className="error-text">{errors.password}</small>}
+            <div className="password-input-container">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create a password"
+                className={errors.password ? 'error' : ''}
+              />
+              <button 
+                type="button" 
+                className="password-toggle" 
+                onClick={togglePasswordVisibility}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            {errors.password && <small className="error-text">{errors.password}</small>}
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              className={errors && errors.confirmPassword ? 'error' : ''}
-            />
-            {errors && errors.confirmPassword && <small className="error-text">{errors.confirmPassword}</small>}
+            <div className="password-input-container">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                className={errors.confirmPassword ? 'error' : ''}
+              />
+              <button 
+                type="button" 
+                className="password-toggle" 
+                onClick={toggleConfirmPasswordVisibility}
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            {errors.confirmPassword && <small className="error-text">{errors.confirmPassword}</small>}
           </div>
-          
-          <div className="form-agreement">
-            <input type="checkbox" id="agreement" required />
-            <label htmlFor="agreement">
-              I agree to the <Link to="/terms" className="auth-link">Terms of Service</Link> and <Link to="/privacy" className="auth-link">Privacy Policy</Link>
-            </label>
+
+          <div className="form-options">
+            <div className="terms-agreement">
+              <input type="checkbox" id="terms" required />
+              <label htmlFor="terms">I agree to the <Link to="/terms" className="terms-link">Terms of Service</Link></label>
+            </div>
           </div>
           
           <button 
@@ -174,11 +264,11 @@ const Signup = () => {
           
           <button 
             type="button"
-            onClick={handleGoogleLoginBtn}
+            onClick={handleGoogleSignup}
             className="google-auth-button"
           >
             <img src="https://cdn.cdnlogo.com/logos/g/35/google-icon.svg" alt="Google" className="google-icon" />
-            Sign up with Google
+            Continue with Google
           </button>
         </form>
         

@@ -1,10 +1,42 @@
 import React from 'react';
-import './index.css'; // You'll need to create this CSS file
+import { useNavigate } from 'react-router-dom';
+import { signOut } from 'firebase/auth';
+import { auth } from '../config';
+import './index.css';
 
+/**
+ * Home component - Main authenticated user interface
+ */
 function Home() {
+  const navigate = useNavigate();
+
+  /**
+   * Handle user sign out
+   */
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      console.log('User signed out successfully');
+      navigate('/signin');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
   return (
     <div className="home-container">
+      {/* Navigation Bar */}
       <header className="hero-section">
+        <div className="nav-bar">
+          <div className="logo">
+            <h2>VibeRooms</h2>
+          </div>
+          <div className="nav-controls">
+            <button onClick={handleSignOut} className="sign-out-button">
+              Sign Out
+            </button>
+          </div>
+        </div>
         <div className="hero-content">
           <h1>Welcome to VibeRooms</h1>
           <p className="tagline">Find your perfect space, match your perfect vibe.</p>
@@ -12,6 +44,7 @@ function Home() {
         </div>
       </header>
 
+      {/* About Section */}
       <section className="about-section">
         <h2>About VibeRooms</h2>
         <p>
@@ -21,6 +54,7 @@ function Home() {
         </p>
       </section>
 
+      {/* Features Section */}
       <section className="features-section">
         <h2>What We Offer</h2>
         <div className="features-grid">
@@ -47,6 +81,7 @@ function Home() {
         </div>
       </section>
 
+      {/* How It Works Section */}
       <section className="how-it-works">
         <h2>How It Works</h2>
         <div className="steps-container">
@@ -73,6 +108,7 @@ function Home() {
         </div>
       </section>
 
+      {/* Testimonials Section */}
       <section className="testimonials">
         <h2>What Our Users Say</h2>
         <div className="testimonials-container">
@@ -91,6 +127,7 @@ function Home() {
         </div>
       </section>
 
+      {/* CTA Section */}
       <section className="cta-section">
         <h2>Ready to Find Your Perfect Room?</h2>
         <p>Join thousands of satisfied users who've found their ideal living situation through VibeRooms.</p>

@@ -232,6 +232,40 @@
   margin-right: 10px;
 }
 
+.password-input-container {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.password-input-container input {
+  flex-grow: 1;
+  padding-right: 65px; /* Make room for the show/hide button */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #5e72e4;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 4px;
+}
+
+.password-toggle:hover {
+  background-color: rgba(94, 114, 228, 0.1);
+}
+
+.password-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(94, 114, 228, 0.3);
+}
+
 @media (max-width: 480px) {
   .auth-logo {
     margin-bottom: 10px;
